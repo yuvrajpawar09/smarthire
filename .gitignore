@@ -32,4 +32,8 @@ build/
 ### VS Code ###
 .vscode/
 application-local.properties
+# Ignore uploaded files
+uploads/
+ml-service/__pycache__/
+*.pyc
 
