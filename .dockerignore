@@ -1,0 +1,8 @@
+target/
+*.iml
+.idea/
+.git/
+application-local.properties
+uploads/
+node_modules/
+frontend/node_modules/

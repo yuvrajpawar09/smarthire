@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+
+  mysql:
+    image: mysql:8.0
+    container_name: smarthire-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: smarthire2024
+      MYSQL_DATABASE: smarthire_db
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: .
+    container_name: smarthire-backend
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/smarthire_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: smarthire2024
+      JWT_SECRET: smarthire-docker-secret-key-must-be-32-chars-long
+      JWT_EXPIRATION: 86400000
+      ML_SERVICE_URL: http://ml-service:5000
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  ml-service:
+    build: ./ml-service
+    container_name: smarthire-ml
+    ports:
+      - "5000:5000"
+
+  frontend:
+    build: ./frontend
+    container_name: smarthire-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:
