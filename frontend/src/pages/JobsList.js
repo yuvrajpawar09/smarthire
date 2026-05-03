@@ -3,64 +3,163 @@ import { useNavigate } from 'react-router-dom';
 import API from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
-const styles = {
-    container: { maxWidth: '900px', margin: '2rem auto', padding: '0 1rem' },
-    title: { fontSize: '1.8rem', fontWeight: 'bold', color: '#1a1a2e', marginBottom: '1.5rem' },
-    searchRow: { display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' },
-    input: { flex: 1, padding: '0.7rem 1rem', border: '1.5px solid #ddd', borderRadius: '8px', fontSize: '0.95rem', minWidth: '180px' },
-    searchBtn: { padding: '0.7rem 1.5rem', background: '#1a1a2e', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' },
-    card: { background: '#fff', borderRadius: '12px', padding: '1.5rem', marginBottom: '1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.07)', border: '1px solid #f0f0f0' },
-    jobTitle: { fontSize: '1.1rem', fontWeight: '700', color: '#1a1a2e', marginBottom: '0.25rem' },
-    company: { color: '#555', fontSize: '0.95rem', marginBottom: '0.5rem' },
-    tagRow: { display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' },
-    tag: { background: '#e8f4fd', color: '#1a6fa8', padding: '3px 10px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '500' },
-    tagGreen: { background: '#eafaf1', color: '#1e8449', padding: '3px 10px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '500' },
-    desc: { color: '#666', fontSize: '0.9rem', lineHeight: '1.5', marginBottom: '1rem' },
-    applyBtn: { background: '#1a1a2e', color: '#fff', border: 'none', padding: '8px 20px', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '0.9rem' },
-    appliedTag: { background: '#eafaf1', color: '#1e8449', padding: '6px 14px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '600' },
-    pagination: { display: 'flex', justifyContent: 'center', gap: '0.5rem', marginTop: '2rem' },
-    pageBtn: { padding: '6px 14px', border: '1px solid #ddd', borderRadius: '6px', cursor: 'pointer', background: '#fff' },
-    pageBtnActive: { padding: '6px 14px', border: '1px solid #1a1a2e', borderRadius: '6px', cursor: 'pointer', background: '#1a1a2e', color: '#fff' },
-    empty: { textAlign: 'center', color: '#888', padding: '3rem', fontSize: '1rem' },
-    salary: { color: '#27ae60', fontWeight: '600', fontSize: '0.9rem' }
-};
+const COLORS = [
+    'linear-gradient(135deg,#FF6B35,#ff9a6c)',
+    'linear-gradient(135deg,#00C896,#00a07a)',
+    'linear-gradient(135deg,#6366F1,#4F46E5)',
+    'linear-gradient(135deg,#F59E0B,#D97706)',
+    'linear-gradient(135deg,#EC4899,#DB2777)',
+    'linear-gradient(135deg,#14B8A6,#0D9488)',
+];
+
+function getInitials(str) {
+    return (str || 'J').substring(0, 2).toUpperCase();
+}
+
+function JobCard({ job, onApply, applying, applied }) {
+    const [hovered, setHovered] = useState(false);
+    const colorIdx = job.id % COLORS.length;
+
+    const s = {
+        card: {
+            background: '#fff',
+            border: `1.5px solid ${hovered ? '#FF6B35' : '#E8E6E1'}`,
+            borderRadius: '16px', padding: '1.5rem',
+            cursor: 'pointer',
+            transition: 'all .2s',
+            transform: hovered ? 'translateY(-3px)' : 'translateY(0)',
+            boxShadow: hovered ? '0 16px 40px rgba(0,0,0,0.1)' : '0 2px 8px rgba(0,0,0,0.04)',
+            position: 'relative', overflow: 'hidden',
+        },
+        logo: {
+            width: 44, height: 44, borderRadius: '10px',
+            background: COLORS[colorIdx],
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontWeight: 800, color: '#fff', fontSize: '0.9rem',
+            fontFamily: "'Syne', sans-serif", flexShrink: 0,
+        },
+        title: {
+            fontFamily: "'Syne', sans-serif", fontWeight: 700,
+            fontSize: '1rem', color: '#0A0A0F',
+            marginBottom: '0.25rem', letterSpacing: '-0.3px',
+        },
+        company: { color: '#6B7280', fontSize: '0.83rem' },
+        tag: (type) => ({
+            padding: '4px 10px', borderRadius: '6px',
+            fontSize: '0.72rem', fontWeight: 600,
+            background: type === 'FULL_TIME' ? '#FEF3C7' : type === 'REMOTE' ? '#D1FAE5' : type === 'INTERNSHIP' ? '#EEF2FF' : '#F3F4F6',
+            color: type === 'FULL_TIME' ? '#92400E' : type === 'REMOTE' ? '#065F46' : type === 'INTERNSHIP' ? '#3730A3' : '#374151',
+        }),
+        skill: {
+            background: '#F3F4F6', color: '#6B7280',
+            padding: '3px 8px', borderRadius: '4px',
+            fontSize: '0.72rem', fontWeight: 500,
+        },
+        footer: {
+            display: 'flex', justifyContent: 'space-between',
+            alignItems: 'center', paddingTop: '1rem',
+            borderTop: '1px solid #F3F4F6', marginTop: '0.75rem',
+        },
+        salary: {
+            fontFamily: "'Syne', sans-serif", fontWeight: 700,
+            color: '#0A0A0F', fontSize: '0.95rem',
+        },
+        time: { color: '#9CA3AF', fontSize: '0.75rem', marginTop: '2px' },
+        match: {
+            display: 'flex', alignItems: 'center', gap: '4px',
+            background: 'rgba(0,200,150,0.1)', color: '#00C896',
+            padding: '4px 10px', borderRadius: '6px',
+            fontSize: '0.75rem', fontWeight: 700,
+        },
+        applyBtn: {
+            background: applied ? '#EAF3DE' : '#FF6B35',
+            color: applied ? '#1e8449' : '#fff',
+            border: 'none', padding: '8px 20px', borderRadius: '7px',
+            fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer',
+            fontFamily: "'DM Sans', sans-serif",
+            transition: 'opacity .15s',
+        },
+    };
+
+    const skills = (job.skills || '').split(',').slice(0, 4);
+
+    return (
+        <div style={s.card} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                    <div style={s.logo}>{getInitials(job.company)}</div>
+                    <div>
+                        <div style={s.title}>{job.title}</div>
+                        <div style={s.company}>{job.company} · {job.location}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+                <span style={s.tag(job.jobType)}>{(job.jobType || '').replace('_', ' ')}</span>
+                {job.location === 'Remote' && <span style={s.tag('REMOTE')}>Remote</span>}
+            </div>
+
+            <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                {skills.map((skill, i) => (
+                    <span key={i} style={s.skill}>{skill.trim()}</span>
+                ))}
+            </div>
+
+            <div style={s.footer}>
+                <div>
+                    <div style={s.salary}>{job.salaryRange || 'Competitive'}</div>
+                    <div style={s.time}>{job.createdAt ? job.createdAt.substring(0, 10) : 'Recent'}</div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <div style={s.match}>⚡ AI Match</div>
+                    <button
+                        style={s.applyBtn}
+                        onClick={(e) => { e.stopPropagation(); onApply(job.id); }}
+                        disabled={applying === job.id || applied}
+                    >
+                        {applying === job.id ? '...' : applied ? 'Applied ✓' : 'Apply'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 function JobsList() {
     const [jobs, setJobs] = useState([]);
     const [keyword, setKeyword] = useState('');
     const [location, setLocation] = useState('');
+    const [activeFilter, setActiveFilter] = useState('All');
     const [page, setPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
+    const [totalElements, setTotalElements] = useState(0);
     const [loading, setLoading] = useState(true);
     const [applying, setApplying] = useState(null);
     const [applied, setApplied] = useState({});
     const { user } = useAuth();
     const navigate = useNavigate();
 
-    useEffect(() => {
-        fetchJobs();
-    }, [page]);
+    const filters = ['All', 'Full Time', 'Remote', 'Internship', 'Contract'];
+
+    useEffect(() => { fetchJobs(); }, [page, activeFilter]);
 
     const fetchJobs = async () => {
         setLoading(true);
         try {
-            const params = { page, size: 8 };
+            const params = { page, size: 6 };
             if (keyword) params.keyword = keyword;
             if (location) params.location = location;
+            if (activeFilter !== 'All') params.jobType = activeFilter.replace(' ', '_').toUpperCase();
             const res = await API.get('/jobs', { params });
-            setJobs(res.data.content);
-            setTotalPages(res.data.totalPages);
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
+            setJobs(res.data.content || []);
+            setTotalPages(res.data.totalPages || 0);
+            setTotalElements(res.data.totalElements || 0);
+        } catch (err) { console.error(err); }
+        finally { setLoading(false); }
     };
 
-    const handleSearch = () => {
-        setPage(0);
-        fetchJobs();
-    };
+    const handleSearch = () => { setPage(0); fetchJobs(); };
 
     const handleApply = async (jobId) => {
         if (!user) { navigate('/login'); return; }
@@ -70,83 +169,99 @@ function JobsList() {
             setApplied(prev => ({ ...prev, [jobId]: true }));
         } catch (err) {
             alert(err.response?.data?.error || 'Failed to apply');
-        } finally {
-            setApplying(null);
-        }
+        } finally { setApplying(null); }
+    };
+
+    const s = {
+        page: { background: '#F7F6F3', minHeight: '100vh', padding: '2.5rem', fontFamily: "'DM Sans', sans-serif" },
+        header: { marginBottom: '2rem' },
+        title: { fontFamily: "'Syne', sans-serif", fontSize: '2rem', fontWeight: 800, color: '#0A0A0F', letterSpacing: '-1px', marginBottom: '0.25rem' },
+        sub: { color: '#6B7280', fontSize: '0.88rem' },
+        searchWrap: {
+            background: '#fff', border: '1.5px solid #E8E6E1',
+            borderRadius: '14px', padding: '0.75rem 1rem',
+            display: 'flex', gap: '0.75rem', alignItems: 'center',
+            marginBottom: '1rem', boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+        },
+        input: { flex: 1, border: 'none', fontSize: '0.95rem', color: '#0A0A0F', fontFamily: "'DM Sans', sans-serif", background: 'transparent', outline: 'none' },
+        divider: { width: '1px', height: '24px', background: '#E8E6E1', flexShrink: 0 },
+        locInput: { flex: 0.5, border: 'none', fontSize: '0.9rem', color: '#0A0A0F', fontFamily: "'DM Sans', sans-serif", background: 'transparent', outline: 'none' },
+        searchBtn: { background: '#0A0A0F', color: '#fff', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap' },
+        filterRow: { display: 'flex', gap: '0.5rem', marginBottom: '1.75rem', flexWrap: 'wrap' },
+        chip: (active) => ({
+            padding: '6px 16px', borderRadius: '100px', fontSize: '0.8rem', fontWeight: 500,
+            cursor: 'pointer', border: `1.5px solid ${active ? '#0A0A0F' : '#E8E6E1'}`,
+            background: active ? '#0A0A0F' : '#fff', color: active ? '#fff' : '#6B7280',
+            transition: 'all .15s',
+        }),
+        grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1rem' },
+        empty: { textAlign: 'center', color: '#9CA3AF', padding: '4rem', fontSize: '1rem', gridColumn: '1/-1' },
+        pagination: { display: 'flex', justifyContent: 'center', gap: '0.5rem', marginTop: '2.5rem' },
+        pageBtn: (active) => ({
+            padding: '8px 16px', borderRadius: '8px', cursor: 'pointer',
+            border: `1.5px solid ${active ? '#0A0A0F' : '#E8E6E1'}`,
+            background: active ? '#0A0A0F' : '#fff',
+            color: active ? '#fff' : '#374151',
+            fontWeight: active ? 700 : 400, fontSize: '0.88rem',
+        }),
     };
 
     return (
-        <div style={styles.container}>
-            <div style={styles.title}>Browse Jobs</div>
-            <div style={styles.searchRow}>
-                <input
-                    style={styles.input}
-                    placeholder="Search by skill, title or keyword..."
-                    value={keyword}
-                    onChange={e => setKeyword(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                />
-                <input
-                    style={styles.input}
-                    placeholder="Location..."
-                    value={location}
-                    onChange={e => setLocation(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                />
-                <button style={styles.searchBtn} onClick={handleSearch}>Search</button>
-            </div>
+        <div style={s.page}>
+            <style>{`@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600&display=swap');`}</style>
 
-            {loading ? (
-                <div style={styles.empty}>Loading jobs...</div>
-            ) : jobs.length === 0 ? (
-                <div style={styles.empty}>No jobs found. Try a different search.</div>
-            ) : (
-                jobs.map(job => (
-                    <div key={job.id} style={styles.card}>
-                        <div style={styles.jobTitle}>{job.title}</div>
-                        <div style={styles.company}>{job.company} — {job.location}</div>
-                        <div style={styles.tagRow}>
-                            <span style={styles.tag}>{job.jobType?.replace('_', ' ')}</span>
-                            {job.salaryRange && <span style={styles.salary}>{job.salaryRange}</span>}
-                        </div>
-                        <div style={styles.desc}>
-                            {job.description?.substring(0, 150)}...
-                        </div>
-                        <div style={styles.tagRow}>
-                            {job.skills?.split(',').map((s, i) => (
-                                <span key={i} style={styles.tagGreen}>{s.trim()}</span>
-                            ))}
-                        </div>
-                        {user?.role === 'CANDIDATE' && (
-                            applied[job.id] ? (
-                                <span style={styles.appliedTag}>Applied!</span>
-                            ) : (
-                                <button
-                                    style={styles.applyBtn}
-                                    onClick={() => handleApply(job.id)}
-                                    disabled={applying === job.id}
-                                >
-                                    {applying === job.id ? 'Applying...' : 'Apply Now'}
-                                </button>
-                            )
-                        )}
-                    </div>
-                ))
-            )}
+            <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+                <div style={s.header}>
+                    <div style={s.title}>Find your next role</div>
+                    <div style={s.sub}>{totalElements} jobs available · Updated today</div>
+                </div>
 
-            {totalPages > 1 && (
-                <div style={styles.pagination}>
-                    {Array.from({ length: totalPages }, (_, i) => (
-                        <button
-                            key={i}
-                            style={i === page ? styles.pageBtnActive : styles.pageBtn}
-                            onClick={() => setPage(i)}
-                        >
-                            {i + 1}
-                        </button>
+                <div style={s.searchWrap}>
+                    <span style={{ color: '#9CA3AF' }}>🔍</span>
+                    <input style={s.input} placeholder="Job title, skill, or keyword..."
+                           value={keyword} onChange={e => setKeyword(e.target.value)}
+                           onKeyDown={e => e.key === 'Enter' && handleSearch()} />
+                    <div style={s.divider} />
+                    <input style={s.locInput} placeholder="📍 Location"
+                           value={location} onChange={e => setLocation(e.target.value)}
+                           onKeyDown={e => e.key === 'Enter' && handleSearch()} />
+                    <button style={s.searchBtn} onClick={handleSearch}>Search</button>
+                </div>
+
+                <div style={s.filterRow}>
+                    {filters.map(f => (
+                        <div key={f} style={s.chip(activeFilter === f)} onClick={() => { setActiveFilter(f); setPage(0); }}>
+                            {f}
+                        </div>
                     ))}
                 </div>
-            )}
+
+                <div style={s.grid}>
+                    {loading ? (
+                        <div style={s.empty}>Loading jobs...</div>
+                    ) : jobs.length === 0 ? (
+                        <div style={s.empty}>No jobs found. Try a different search.</div>
+                    ) : jobs.map(job => (
+                        <JobCard
+                            key={job.id}
+                            job={job}
+                            onApply={handleApply}
+                            applying={applying}
+                            applied={!!applied[job.id]}
+                        />
+                    ))}
+                </div>
+
+                {totalPages > 1 && (
+                    <div style={s.pagination}>
+                        <button style={s.pageBtn(false)} onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>← Prev</button>
+                        {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => (
+                            <button key={i} style={s.pageBtn(i === page)} onClick={() => setPage(i)}>{i + 1}</button>
+                        ))}
+                        <button style={s.pageBtn(false)} onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}>Next →</button>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
